@@ -5,7 +5,8 @@ import 'category_page.dart';
 import 'favorite_page.dart';
 import 'profile_page.dart';
 import 'message_page.dart'; // Chat page
-import '../all_categories_pages/product_details_page.dart'; // Make sure you have this page
+import '../all_categories_pages/product_details_page.dart';
+import 'image_search_page.dart'; // Make sure you have this page
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -85,27 +86,35 @@ class _HomeTabState extends State<HomeTab> {
   }
 
   void _openPage(String title) {
-    if (title == "Dashboard") {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const DashboardPage()),
-      );
-      return;
-    }
-
-    if (title == "Chat") {
-      Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const MessagePage()),
-      );
-      return;
-    }
-
+  if (title == "Image Search") {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => PlaceholderPage(title: title)),
+      MaterialPageRoute(builder: (_) => const ImageSearchPage()),
     );
+    return;
   }
+
+  if (title == "Dashboard") {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const DashboardPage()),
+    );
+    return;
+  }
+
+  if (title == "Chat") {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const MessagePage()),
+    );
+    return;
+  }
+
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (_) => PlaceholderPage(title: title)),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
