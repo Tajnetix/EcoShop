@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'dashboard_page.dart';
 import 'category_page.dart';
 import 'favorite_page.dart';
 import 'profile_page.dart';
-import 'message_page.dart'; // Chat page
+import 'message_page.dart';
 import '../all_categories_pages/product_details_page.dart';
-import 'image_search_page.dart'; // Make sure you have this page
+import 'image_search_page.dart';
+
+import '../services/cart_service.dart';
+import '../models/cart_item.dart';
+import 'cart_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -60,69 +65,93 @@ class _HomeTabState extends State<HomeTab> {
 
   List<Map<String, dynamic>> products = [];
   bool isLoading = true;
+  int cartCount = 0;
+
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     fetchRandomProducts();
+    cartCount = CartService().totalItems;
   }
 
   Future<void> fetchRandomProducts() async {
     try {
-      final data = await supabase
-          .from('products')
-          .select()
-          .limit(50); // fetch up to 50 products
+      final data = await supabase.from('products').select().limit(50);
+      data.shuffle();
 
-      data.shuffle(); // randomize
       setState(() {
         products = List<Map<String, dynamic>>.from(data.take(5));
         isLoading = false;
       });
     } catch (e) {
-      print("ERROR fetching products: $e");
+      setState(() => isLoading = false);
+    }
+  }
+
+  Future<void> searchProducts(String query) async {
+    if (query.isEmpty) {
+      fetchRandomProducts();
+      return;
+    }
+
+    setState(() => isLoading = true);
+
+    try {
+      final data = await supabase
+          .from('products')
+          .select()
+          .ilike('name', '%$query%');
+
+      setState(() {
+        products = List<Map<String, dynamic>>.from(data);
+        isLoading = false;
+      });
+    } catch (e) {
       setState(() => isLoading = false);
     }
   }
 
   void _openPage(String title) {
-  if (title == "Image Search") {
+    if (title == "Image Search") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ImageSearchPage()),
+      );
+      return;
+    }
+
+    if (title == "Dashboard") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const DashboardPage()),
+      );
+      return;
+    }
+
+    if (title == "Chat") {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const MessagePage()),
+      );
+      return;
+    }
+
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const ImageSearchPage()),
+      MaterialPageRoute(builder: (_) => PlaceholderPage(title: title)),
     );
-    return;
   }
-
-  if (title == "Dashboard") {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const DashboardPage()),
-    );
-    return;
-  }
-
-  if (title == "Chat") {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const MessagePage()),
-    );
-    return;
-  }
-
-  Navigator.push(
-    context,
-    MaterialPageRoute(builder: (_) => PlaceholderPage(title: title)),
-  );
-}
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final crossAxisCount = screenWidth > 600 ? 3 : 2; // 3 columns for tablets
+    final crossAxisCount = screenWidth > 600 ? 3 : 2;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6F0),
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -134,21 +163,78 @@ class _HomeTabState extends State<HomeTab> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications,
+                color: Color(0xFF1B5E20)),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text("No new notifications")),
+              );
+            },
+          ),
+          Stack(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.shopping_cart,
+                    color: Color(0xFF1B5E20)),
+                onPressed: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const CartPage()),
+                  );
+
+                  setState(() {
+                    cartCount = CartService().totalItems;
+                  });
+                },
+              ),
+              if (cartCount > 0)
+                Positioned(
+                  right: 6,
+                  top: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints:
+                        const BoxConstraints(minWidth: 18, minHeight: 18),
+                    child: Text(
+                      '$cartCount',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
       ),
+
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 16),
+        padding:
+            EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Search Bar
+
+            // SEARCH BAR
             Container(
               height: 50,
               decoration: BoxDecoration(
                 color: const Color(0xFFE3EFE4),
                 borderRadius: BorderRadius.circular(30),
               ),
-              child: const TextField(
-                decoration: InputDecoration(
+              child: TextField(
+                controller: _searchController,
+                onChanged: searchProducts,
+                decoration: const InputDecoration(
                   hintText: 'Search eco-friendly products...',
                   prefixIcon: Icon(Icons.search),
                   border: InputBorder.none,
@@ -158,7 +244,7 @@ class _HomeTabState extends State<HomeTab> {
 
             const SizedBox(height: 16),
 
-            // Banner Buttons
+            // BANNER BUTTONS
             Row(
               children: [
                 Expanded(
@@ -189,7 +275,6 @@ class _HomeTabState extends State<HomeTab> {
 
             const SizedBox(height: 20),
 
-            // Section Title
             const Text(
               "Our Products",
               style: TextStyle(
@@ -198,9 +283,9 @@ class _HomeTabState extends State<HomeTab> {
                 fontSize: 18,
               ),
             ),
+
             const SizedBox(height: 12),
 
-            // Products Grid
             isLoading
                 ? const Center(child: CircularProgressIndicator())
                 : GridView.builder(
@@ -215,27 +300,43 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                     itemBuilder: (_, index) {
                       final product = products[index];
+
                       return _productCard(
-                        name: product['name'] ?? 'No Name',
+                        name: product['name'] ?? '',
                         price: product['price']?.toDouble() ?? 0.0,
                         imageUrl: product['image_url'] ?? '',
                         onAddToCart: () {
-                          print("Added ${product['name']} to cart");
+                          CartService().addToCart(
+                            CartItem(
+                              id: product['id'].toString(),
+                              name: product['name'],
+                              price: product['price'].toDouble(),
+                              imageUrl: product['image_url'],
+                            ),
+                          );
+
+                          setState(() {
+                            cartCount = CartService().totalItems;
+                          });
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                                content:
+                                    Text("${product['name']} added to cart")),
+                          );
                         },
-                        onFavorite: () {
-                          print("Favorited ${product['name']}");
-                        },
+                        onFavorite: () {},
                         onTap: () {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (_) => ProductDetailsPage(
-        productId: product['id'],
-        origin: 'home', // just a string
-      ),
-    ),
-  );
-},
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailsPage(
+                                productId: product['id'],
+                                origin: 'home',
+                              ),
+                            ),
+                          );
+                        },
                       );
                     },
                   ),
@@ -277,20 +378,16 @@ class _HomeTabState extends State<HomeTab> {
     required String imageUrl,
     required VoidCallback onAddToCart,
     required VoidCallback onFavorite,
-    required VoidCallback onTap, // <-- new
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
-      onTap: onTap, // <-- wraps whole card
+      onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: const [
-            BoxShadow(
-              color: Colors.black12,
-              blurRadius: 6,
-              offset: Offset(0, 3),
-            )
+            BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))
           ],
         ),
         child: Column(
@@ -298,14 +395,15 @@ class _HomeTabState extends State<HomeTab> {
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                borderRadius:
+                    const BorderRadius.vertical(top: Radius.circular(18)),
                 child: Image.network(
                   imageUrl,
                   width: double.infinity,
                   fit: BoxFit.cover,
                   errorBuilder: (_, __, ___) => Container(
                     color: Colors.grey[200],
-                    child: const Icon(Icons.image, size: 50, color: Colors.grey),
+                    child: const Icon(Icons.image, size: 50),
                   ),
                 ),
               ),
@@ -315,32 +413,29 @@ class _HomeTabState extends State<HomeTab> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text(name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style:
+                          const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
-                  Text(
-                    "\$$price",
-                    style: const TextStyle(
-                      color: Color(0xFF1B5E20),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  Text("\$$price",
+                      style: const TextStyle(
+                        color: Color(0xFF1B5E20),
+                        fontWeight: FontWeight.bold,
+                      )),
                   const SizedBox(height: 8),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.favorite_border, color: Colors.red),
+                        icon: const Icon(Icons.favorite_border,
+                            color: Color(0xFF1B5E20)),
                         onPressed: onFavorite,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.shopping_cart, color: Colors.green),
+                        icon: const Icon(Icons.shopping_cart,
+                            color: Color(0xFF1B5E20)),
                         onPressed: onAddToCart,
                       ),
                     ],
@@ -355,7 +450,6 @@ class _HomeTabState extends State<HomeTab> {
   }
 }
 
-// PlaceholderPage unchanged
 class PlaceholderPage extends StatelessWidget {
   final String title;
   const PlaceholderPage({super.key, required this.title});

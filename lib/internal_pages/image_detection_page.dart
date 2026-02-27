@@ -1,125 +1,108 @@
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
+import 'vision_service.dart';
 
 class ImageDetectionPage extends StatefulWidget {
-  final File imageFile; // ✅ Receive image from previous page
+  final File? imageFile;
+  final Uint8List? imageBytes;
 
   const ImageDetectionPage({
     super.key,
-    required this.imageFile,
+    this.imageFile,
+    this.imageBytes,
   });
 
   @override
-  State<ImageDetectionPage> createState() => _ImageDetectionPageState();
+  State<ImageDetectionPage> createState() =>
+      _ImageDetectionPageState();
 }
 
-class _ImageDetectionPageState extends State<ImageDetectionPage> {
-  String? detectedObject;
-  String? detectedMaterial;
-  double? confidence;
+class _ImageDetectionPageState
+    extends State<ImageDetectionPage> {
+  List<String> labels = [];
+  bool isLoading = true;
+
+  final ImageLabeler _imageLabeler =
+      ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.5));
 
   @override
   void initState() {
     super.initState();
-    detectObjectAndMaterial(widget.imageFile);
+    detect();
   }
 
-  // ----------------------------
-  // ML Kit Detection
-  // ----------------------------
-  Future<void> detectObjectAndMaterial(File imageFile) async {
+  Future<void> detect() async {
     try {
-      final inputImage = InputImage.fromFile(imageFile);
+      if (kIsWeb) {
+        // 🌐 WEB → Google Vision API
+        final result =
+            await VisionService.detectLabels(widget.imageBytes!);
+        labels = result;
+      } else {
+        // 📱 MOBILE → ML Kit
+        final inputImage =
+            InputImage.fromFile(widget.imageFile!);
 
-      final ImageLabeler labeler = ImageLabeler(
-        options: ImageLabelerOptions(confidenceThreshold: 0.5),
-      );
+        final recognizedLabels =
+            await _imageLabeler.processImage(inputImage);
 
-      final List<ImageLabel> labels = await labeler.processImage(inputImage);
-
-      if (labels.isNotEmpty) {
-        final topLabel = labels.first;
-
-        setState(() {
-          detectedObject = topLabel.label;
-          confidence = topLabel.confidence;
-          detectedMaterial = guessMaterial(topLabel.label);
-        });
+        labels = recognizedLabels
+            .map((e) =>
+                "${e.label} (${(e.confidence * 100).toStringAsFixed(1)}%)")
+            .toList();
       }
-
-      labeler.close();
     } catch (e) {
-      print("Detection Error: $e");
+      debugPrint("Detection Error: $e");
+    }
+
+    if (mounted) {
+      setState(() {
+        isLoading = false;
+      });
     }
   }
 
-  // ----------------------------
-  // Rule-Based Material Guess
-  // ----------------------------
-  String guessMaterial(String label) {
-    final lowerLabel = label.toLowerCase();
-
-    if (lowerLabel.contains('bottle') ||
-        lowerLabel.contains('container') ||
-        lowerLabel.contains('cup') ||
-        lowerLabel.contains('pot') ||
-        lowerLabel.contains('plant')) {
-      return "Plastic";
+  @override
+  void dispose() {
+    if (!kIsWeb) {
+      _imageLabeler.close();
     }
-
-    return "Unknown";
+    super.dispose();
   }
 
-  // ----------------------------
-  // UI
-  // ----------------------------
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Eco Object Detection"),
-        centerTitle: true,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            /// Image Preview
-            Image.file(
-              widget.imageFile,
-              height: 220,
-            ),
-
-            const SizedBox(height: 25),
-
-            /// Detection Result
-            detectedObject != null
-                ? Column(
-                    children: [
-                      Text(
-                        "Object: $detectedObject",
-                        style: const TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Material: $detectedMaterial",
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        "Confidence: ${confidence != null ? (confidence! * 100).toStringAsFixed(2) + '%' : 'Calculating...'}",
-                        style: const TextStyle(fontSize: 16),
-                      ),
-                    ],
-                  )
-                : const Padding(
-                    padding: EdgeInsets.only(top: 20),
-                    child: CircularProgressIndicator(),
+      appBar: AppBar(title: const Text("Image Detection")),
+      body: Column(
+        children: [
+          Expanded(
+            child: kIsWeb
+                ? Image.memory(widget.imageBytes!,
+                    fit: BoxFit.cover)
+                : Image.file(widget.imageFile!,
+                    fit: BoxFit.cover),
+          ),
+          isLoading
+              ? const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: CircularProgressIndicator(),
+                )
+              : Expanded(
+                  child: ListView.builder(
+                    itemCount: labels.length,
+                    itemBuilder: (context, index) {
+                      return ListTile(
+                        leading: const Icon(Icons.label),
+                        title: Text(labels[index]),
+                      );
+                    },
                   ),
-          ],
-        ),
+                ),
+        ],
       ),
     );
   }

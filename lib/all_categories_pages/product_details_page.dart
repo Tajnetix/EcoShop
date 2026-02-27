@@ -3,12 +3,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final String productId;
-  final String origin; // <-- new field to know where it came from
+  final String origin;
 
   const ProductDetailsPage({
     super.key,
     required this.productId,
-    this.origin = 'home', // default is home
+    this.origin = 'home',
   });
 
   @override
@@ -47,61 +47,64 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final ecoPoints = ((product?['price'] ?? 0) * 4).round();
-    final co2Saved = ((product?['price'] ?? 0) * 0.015).toStringAsFixed(2);
+    if (isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    final int ecoPoints =
+        (product?['eco_points'] ?? 0) as int;
+
+    final double co2Value =
+        (product?['co2_saved_per_unit'] ?? 0).toDouble();
+
+    final String co2Saved =
+        co2Value.toStringAsFixed(2);
 
     return Scaffold(
       backgroundColor: const Color(0xFFF3F7F2),
       bottomNavigationBar: _buildBottomBar(),
-      body: isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SafeArea(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 22),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 25),
-                    _buildBackButton(), // <-- added back button at top
-                    const SizedBox(height: 15),
-                    _buildResponsiveImage(),
-                    const SizedBox(height: 35),
-                    _buildProductTitle(),
-                    const SizedBox(height: 8),
-                    _buildProductPrice(),
-                    const SizedBox(height: 28),
-                    _buildSectionTitle("Description"),
-                    const SizedBox(height: 8),
-                    _buildProductDescription(),
-                    const SizedBox(height: 28),
-                    _buildSectionTitle("Features"),
-                    const SizedBox(height: 12),
-                    ..._buildFeatures(product?['features'] ?? ""),
-                    const SizedBox(height: 28),
-                    _buildSustainableSection(ecoPoints, co2Saved),
-                    const SizedBox(height: 120),
-                  ],
-                ),
-              ),
-            ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 22),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 25),
+              _buildBackButton(),
+              const SizedBox(height: 15),
+              _buildResponsiveImage(),
+              const SizedBox(height: 35),
+              _buildProductTitle(),
+              const SizedBox(height: 8),
+              _buildProductPrice(),
+              const SizedBox(height: 28),
+              _buildSectionTitle("Description"),
+              const SizedBox(height: 8),
+              _buildProductDescription(),
+              const SizedBox(height: 28),
+              _buildSectionTitle("Features"),
+              const SizedBox(height: 12),
+              ..._buildFeatures(product?['features'] ?? ""),
+              const SizedBox(height: 28),
+              _buildSustainableSection(ecoPoints, co2Saved),
+              const SizedBox(height: 120),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  /// BACK BUTTON
   Widget _buildBackButton() {
     return IconButton(
-      icon: const Icon(Icons.arrow_back, size: 28, color: Color(0xFF1B5E20)),
-      onPressed: () {
-        if (widget.origin == 'home') {
-          Navigator.pop(context); // back to home page
-        } else {
-          Navigator.pop(context); // for future, can handle other origins
-        }
-      },
+      icon: const Icon(Icons.arrow_back,
+          size: 28, color: Color(0xFF1B5E20)),
+      onPressed: () => Navigator.pop(context),
     );
   }
 
-  /// RESPONSIVE IMAGE SECTION
   Widget _buildResponsiveImage() {
     return Center(
       child: LayoutBuilder(
@@ -135,7 +138,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     );
   }
 
-  /// PRODUCT TITLE
   Widget _buildProductTitle() {
     return Text(
       product?['name'] ?? '',
@@ -147,7 +149,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     );
   }
 
-  /// PRODUCT PRICE
   Widget _buildProductPrice() {
     return Text(
       "\$${product?['price']}",
@@ -159,7 +160,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     );
   }
 
-  /// SECTION TITLE
   Widget _buildSectionTitle(String title) {
     return Text(
       title,
@@ -170,18 +170,13 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     );
   }
 
-  /// PRODUCT DESCRIPTION
   Widget _buildProductDescription() {
     return Text(
       product?['description'] ?? '',
-      style: const TextStyle(
-        height: 1.6,
-        color: Colors.black87,
-      ),
+      style: const TextStyle(height: 1.6),
     );
   }
 
-  /// FEATURES LIST
   List<Widget> _buildFeatures(String features) {
     final items = features.split(',');
 
@@ -190,26 +185,18 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         padding: const EdgeInsets.only(bottom: 10),
         child: Row(
           children: [
-            const Icon(
-              Icons.eco,
-              size: 18,
-              color: Color(0xFF2E7D32),
-            ),
+            const Icon(Icons.eco,
+                size: 18, color: Color(0xFF2E7D32)),
             const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                e.trim(),
-                style: const TextStyle(color: Colors.black87),
-              ),
-            ),
+            Expanded(child: Text(e.trim())),
           ],
         ),
       );
     }).toList();
   }
 
-  /// SUSTAINABLE SECTION
-  Widget _buildSustainableSection(int ecoPoints, String co2Saved) {
+  Widget _buildSustainableSection(
+      int ecoPoints, String co2Saved) {
     return Container(
       padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
@@ -230,14 +217,16 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
           const SizedBox(height: 6),
           Text(
             "Replaces ${product?['alternative_of'] ?? ''}",
-            style: const TextStyle(color: Colors.black87),
           ),
           const SizedBox(height: 18),
           Row(
             children: [
-              Expanded(child: _ecoBox("Eco Points", "+$ecoPoints")),
+              Expanded(
+                  child: _ecoBox("Eco Points", "+$ecoPoints")),
               const SizedBox(width: 14),
-              Expanded(child: _ecoBox("CO₂ Saved", "$co2Saved kg")),
+              Expanded(
+                  child:
+                      _ecoBox("CO₂ Saved", "$co2Saved kg")),
             ],
           ),
         ],
@@ -245,7 +234,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     );
   }
 
-  /// ECO BOX WIDGET
   Widget _ecoBox(String title, String value) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 16),
@@ -255,55 +243,36 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
       ),
       child: Column(
         children: [
-          Text(
-            title,
-            style: const TextStyle(fontSize: 12, color: Colors.grey),
-          ),
+          Text(title,
+              style:
+                  const TextStyle(fontSize: 12, color: Colors.grey)),
           const SizedBox(height: 6),
-          Text(
-            value,
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              color: Color(0xFF2E7D32),
-            ),
-          ),
+          Text(value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Color(0xFF2E7D32),
+              )),
         ],
       ),
     );
   }
 
-  /// BOTTOM ADD TO CART BUTTON
   Widget _buildBottomBar() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 20,
-          )
-        ],
-      ),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 22, vertical: 18),
       child: ElevatedButton(
         style: ElevatedButton.styleFrom(
           backgroundColor: const Color(0xFF1B5E20),
-          foregroundColor: Colors.white,
-          padding: const EdgeInsets.symmetric(vertical: 18),
+          padding:
+              const EdgeInsets.symmetric(vertical: 18),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(40),
           ),
         ),
         onPressed: () {},
-        child: const Text(
-          "Add to Cart",
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: Colors.white,
-          ),
-        ),
+        child: const Text("Add to Cart"),
       ),
     );
   }
