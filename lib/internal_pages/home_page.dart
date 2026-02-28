@@ -12,6 +12,8 @@ import 'image_search_page.dart';
 import '../services/cart_service.dart';
 import '../models/cart_item.dart';
 import 'cart_page.dart';
+import '../services/favorite_service.dart';
+import '../models/favorite_model.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -82,7 +84,7 @@ class _HomeTabState extends State<HomeTab> {
       data.shuffle();
 
       setState(() {
-        products = List<Map<String, dynamic>>.from(data.take(5));
+        products = List<Map<String, dynamic>>.from(data.take(10));
         isLoading = false;
       });
     } catch (e) {
@@ -301,43 +303,55 @@ class _HomeTabState extends State<HomeTab> {
                     itemBuilder: (_, index) {
                       final product = products[index];
 
-                      return _productCard(
-                        name: product['name'] ?? '',
-                        price: product['price']?.toDouble() ?? 0.0,
-                        imageUrl: product['image_url'] ?? '',
-                        onAddToCart: () {
-                          CartService().addToCart(
-                            CartItem(
-                              id: product['id'].toString(),
-                              name: product['name'],
-                              price: product['price'].toDouble(),
-                              imageUrl: product['image_url'],
-                            ),
-                          );
+return _productCard(
+  name: product['name'] ?? '',
+  price: product['price']?.toDouble() ?? 0.0,
+  imageUrl: product['image_url'] ?? '',
+  onAddToCart: () {
+    CartService().addToCart(
+      CartItem(
+        id: product['id'].toString(),
+        name: product['name'],
+        price: product['price'].toDouble(),
+        imageUrl: product['image_url'],
+      ),
+    );
 
-                          setState(() {
-                            cartCount = CartService().totalItems;
-                          });
+    setState(() {
+      cartCount = CartService().totalItems;
+    });
 
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                                content:
-                                    Text("${product['name']} added to cart")),
-                          );
-                        },
-                        onFavorite: () {},
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ProductDetailsPage(
-                                productId: product['id'],
-                                origin: 'home',
-                              ),
-                            ),
-                          );
-                        },
-                      );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("${product['name']} added to cart")),
+    );
+  },
+  onFavorite: () async {
+  final item = FavoriteItem(
+    id: '',
+    productId: product['id'].toString(),
+    name: product['name'],
+    price: product['price'].toDouble(),
+    imageUrl: product['image_url'],
+  );
+
+  await FavoriteService().addToFavorite(item);
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    const SnackBar(content: Text("Added to favorites")),
+  );
+},
+  onTap: () {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ProductDetailsPage(
+          productId: product['id'],
+          origin: 'home',
+        ),
+      ),
+    );
+  },
+);
                     },
                   ),
           ],
