@@ -11,9 +11,9 @@ import 'image_search_page.dart';
 
 import '../services/cart_service.dart';
 import '../models/cart_item.dart';
-import 'cart_page.dart';
 import '../services/favorite_service.dart';
 import '../models/favorite_model.dart';
+import 'cart_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -71,18 +71,32 @@ class _HomeTabState extends State<HomeTab> {
 
   final TextEditingController _searchController = TextEditingController();
 
+  // Local favorite tracking
+  Set<String> favoriteIds = {};
+
   @override
   void initState() {
     super.initState();
     fetchRandomProducts();
     cartCount = CartService().totalItems;
+    loadFavorites(); // load favorites from FavoriteService
+  }
+
+  Future<void> loadFavorites() async {
+    try {
+      final favs = await FavoriteService().getFavorites();
+      setState(() {
+        favoriteIds = favs.map((e) => e.productId).toSet();
+      });
+    } catch (e) {
+      debugPrint("Error loading favorites: $e");
+    }
   }
 
   Future<void> fetchRandomProducts() async {
     try {
       final data = await supabase.from('products').select().limit(50);
       data.shuffle();
-
       setState(() {
         products = List<Map<String, dynamic>>.from(data.take(10));
         isLoading = false;
@@ -214,8 +228,7 @@ class _HomeTabState extends State<HomeTab> {
         ],
       ),
       body: SingleChildScrollView(
-        padding:
-            EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 16),
+        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -292,6 +305,8 @@ class _HomeTabState extends State<HomeTab> {
                     ),
                     itemBuilder: (_, index) {
                       final product = products[index];
+                      final pid = product['id'].toString();
+                      final isFav = favoriteIds.contains(pid);
 
                       return _productCard(
                         name: product['name'] ?? '',
@@ -300,43 +315,42 @@ class _HomeTabState extends State<HomeTab> {
                         onAddToCart: () {
                           CartService().addToCart(
                             CartItem(
-                              id: product['id'].toString(),
+                              id: pid,
                               name: product['name'],
                               price: product['price'].toDouble(),
                               imageUrl: product['image_url'],
                             ),
                           );
-                          setState(() {
-                            cartCount = CartService().totalItems;
-                          });
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("${product['name']} added to cart")),
-                          );
+                          setState(() => cartCount = CartService().totalItems);
                         },
                         onFavorite: () async {
-                          final item = FavoriteItem(
-                            id: '',
-                            productId: product['id'].toString(),
-                            name: product['name'],
-                            price: product['price'].toDouble(),
-                            imageUrl: product['image_url'],
-                          );
-                          await FavoriteService().addToFavorite(item);
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text("Added to favorites")),
-                          );
+                          if (isFav) {
+                            favoriteIds.remove(pid);
+                            await FavoriteService().removeFromFavorite(pid);
+                          } else {
+                            favoriteIds.add(pid);
+                            await FavoriteService().addToFavorite(FavoriteItem(
+                              id: '',
+                              productId: pid,
+                              name: product['name'],
+                              price: product['price'].toDouble(),
+                              imageUrl: product['image_url'],
+                            ));
+                          }
+                          setState(() {}); // refresh UI
                         },
                         onTap: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (_) => ProductDetailsPage(
-                                productId: product['id'],
+                                productId: pid,
                                 origin: 'home',
                               ),
                             ),
                           );
                         },
+                        isFavorite: isFav,
                       );
                     },
                   ),
@@ -379,6 +393,7 @@ class _HomeTabState extends State<HomeTab> {
     required VoidCallback onAddToCart,
     required VoidCallback onFavorite,
     required VoidCallback onTap,
+    required bool isFavorite,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -427,7 +442,10 @@ class _HomeTabState extends State<HomeTab> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.favorite_border, color: Color(0xFF1B5E20)),
+                        icon: Icon(
+                          isFavorite ? Icons.favorite : Icons.favorite_border,
+                          color: isFavorite ? Colors.green : const Color(0xFF1B5E20),
+                        ),
                         onPressed: onFavorite,
                       ),
                       IconButton(
