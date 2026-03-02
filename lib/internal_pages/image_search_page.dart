@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'image_detection_page.dart';
+import 'image_detection_page_web.dart';
 
 class ImageSearchPage extends StatefulWidget {
   const ImageSearchPage({super.key});
@@ -21,8 +22,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
     try {
       debugPrint("Gallery button tapped");
 
-      final XFile? image =
-          await _picker.pickImage(source: ImageSource.gallery);
+      final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
 
       if (!mounted || image == null) {
         debugPrint("No image selected or widget not mounted");
@@ -30,23 +30,21 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
       }
 
       if (kIsWeb) {
+        debugPrint("Web platform detected");
         final Uint8List bytes = await image.readAsBytes();
-
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                ImageDetectionPage(imageBytes: bytes),
+            builder: (context) => ImageDetectionPageWeb(imageBytes: bytes),
           ),
         );
       } else {
         final file = File(image.path);
-
+        debugPrint("Mobile file path: ${file.path}");
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                ImageDetectionPage(imageFile: file),
+            builder: (context) => ImageDetectionPage(imageFile: file),
           ),
         );
       }
@@ -60,29 +58,24 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
     try {
       debugPrint("Camera button tapped");
 
-      final XFile? image =
-          await _picker.pickImage(source: ImageSource.camera);
+      final XFile? image = await _picker.pickImage(source: ImageSource.camera);
 
       if (!mounted || image == null) return;
 
       if (kIsWeb) {
         final Uint8List bytes = await image.readAsBytes();
-
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                ImageDetectionPage(imageBytes: bytes),
+            builder: (context) => ImageDetectionPageWeb(imageBytes: bytes),
           ),
         );
       } else {
         final file = File(image.path);
-
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                ImageDetectionPage(imageFile: file),
+            builder: (context) => ImageDetectionPage(imageFile: file),
           ),
         );
       }
@@ -105,8 +98,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
 
             return SingleChildScrollView(
               child: Padding(
-                padding:
-                    EdgeInsets.symmetric(horizontal: horizontalPadding),
+                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
@@ -122,8 +114,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                             child: Text(
                               "Image Search",
                               style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w600),
+                                  fontSize: 20, fontWeight: FontWeight.w600),
                             ),
                           ),
                         ),
@@ -141,21 +132,17 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                           CircleAvatar(
                             backgroundColor: Colors.white,
                             radius: 22,
-                            child: Icon(Icons.search,
-                                color: Color(0xFF2E7D32)),
+                            child: Icon(Icons.search, color: Color(0xFF2E7D32)),
                           ),
                           SizedBox(width: 15),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment:
-                                  CrossAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   "Search by Image",
                                   style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight:
-                                          FontWeight.w600),
+                                      fontSize: 16, fontWeight: FontWeight.w600),
                                 ),
                                 SizedBox(height: 6),
                                 Text(
@@ -175,8 +162,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                       width: cardWidth,
                       icon: Icons.camera_alt_outlined,
                       title: "Take a Photo",
-                      subtitle:
-                          "Use your camera to scan a product",
+                      subtitle: "Use your camera to scan a product",
                       onTap: takePhoto,
                     ),
                     SizedBox(height: spacing),
@@ -186,8 +172,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                       width: cardWidth,
                       icon: Icons.upload_outlined,
                       title: "Upload Image",
-                      subtitle:
-                          "Choose from your gallery",
+                      subtitle: "Choose from your gallery",
                       onTap: pickFromGallery,
                     ),
                     SizedBox(height: spacing),
@@ -195,30 +180,23 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                     /// How it works
                     _normalCard(
                       width: cardWidth,
-                      background: const Color(0xFFB7D6B7)
-                          .withOpacity(0.7),
+                      background: const Color(0xFFB7D6B7).withOpacity(0.7),
                       child: const Padding(
                         padding: EdgeInsets.all(16),
                         child: Column(
-                          crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               "How it works",
                               style: TextStyle(
-                                  fontSize: 15,
-                                  fontWeight:
-                                      FontWeight.w600),
+                                  fontSize: 15, fontWeight: FontWeight.w600),
                             ),
                             SizedBox(height: 12),
-                            Text(
-                                "1. Take a photo or upload an image of a product"),
+                            Text("1. Take a photo or upload an image of a product"),
                             SizedBox(height: 6),
-                            Text(
-                                "2. Our AI analyzes the image"),
+                            Text("2. Our AI analyzes the image (Mobile Only)"),
                             SizedBox(height: 6),
-                            Text(
-                                "3. Get sustainable alternatives instantly"),
+                            Text("3. Get sustainable alternatives instantly"),
                           ],
                         ),
                       ),
@@ -269,8 +247,7 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
         dashPattern: const [6, 4],
         child: Container(
           width: width,
-          padding: const EdgeInsets.symmetric(
-              vertical: 20, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -284,20 +261,16 @@ class _ImageSearchPageState extends State<ImageSearchPage> {
                   shape: BoxShape.circle,
                   color: Color(0xFFD9EED9),
                 ),
-                child: Icon(icon,
-                    color: const Color(0xFF2E7D32)),
+                child: Icon(icon, color: const Color(0xFF2E7D32)),
               ),
               const SizedBox(height: 12),
               Text(title,
                   style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600)),
+                      fontSize: 16, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Text(subtitle,
                   textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      fontSize: 13,
-                      color: Colors.black54)),
+                  style: const TextStyle(fontSize: 13, color: Colors.black54)),
             ],
           ),
         ),

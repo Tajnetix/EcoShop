@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../all_categories_pages/product_category_page.dart';
+import 'home_page.dart'; // 👈 added
 
 class CategoryPage extends StatelessWidget {
   const CategoryPage({super.key});
@@ -37,7 +38,7 @@ class CategoryPage extends StatelessWidget {
     ),
     CategoryItem(
       title: 'Bags & Packaging',
-      categoryId: '973505a7-f5ab-4a1b-849c-4f61ffdf381e', 
+      categoryId: '973505a7-f5ab-4a1b-849c-4f61ffdf381e',
       icon: Icons.shopping_bag,
       color: Color(0xFFDCECCB),
     ),
@@ -75,6 +76,17 @@ class CategoryPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            // 👇 Go back to HomePage using Navigator
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (_) => const HomePage()),
+              (route) => false,
+            );
+          },
+        ),
         title: const Text('Categories'),
         centerTitle: true,
       ),

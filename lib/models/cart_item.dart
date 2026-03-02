@@ -4,6 +4,8 @@ class CartItem {
   final double price;
   final String imageUrl;
   int quantity;
+  int ecoPoints;
+  double co2Saved;
 
   CartItem({
     required this.id,
@@ -11,5 +13,7 @@ class CartItem {
     required this.price,
     required this.imageUrl,
     this.quantity = 1,
+    this.ecoPoints = 0,
+    this.co2Saved = 0.0,
   });
 }

@@ -1,75 +1,58 @@
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_mlkit_image_labeling/google_mlkit_image_labeling.dart';
-import 'vision_service.dart';
 
 class ImageDetectionPage extends StatefulWidget {
-  final File? imageFile;
-  final Uint8List? imageBytes;
+  final File imageFile;
 
-  const ImageDetectionPage({
-    super.key,
-    this.imageFile,
-    this.imageBytes,
-  });
+  const ImageDetectionPage({super.key, required this.imageFile});
 
   @override
-  State<ImageDetectionPage> createState() =>
-      _ImageDetectionPageState();
+  State<ImageDetectionPage> createState() => _ImageDetectionPageState();
 }
 
-class _ImageDetectionPageState
-    extends State<ImageDetectionPage> {
-  List<String> labels = [];
-  bool isLoading = true;
-
+class _ImageDetectionPageState extends State<ImageDetectionPage> {
   final ImageLabeler _imageLabeler =
       ImageLabeler(options: ImageLabelerOptions(confidenceThreshold: 0.5));
+  List<String> labels = [];
+  bool isProcessing = true;
 
   @override
   void initState() {
     super.initState();
-    detect();
+    _processImage();
   }
 
-  Future<void> detect() async {
+  Future<void> _processImage() async {
+    setState(() {
+      isProcessing = true;
+    });
+
+    final inputImage = InputImage.fromFile(widget.imageFile);
+
     try {
-      if (kIsWeb) {
-        // 🌐 WEB → Google Vision API
-        final result =
-            await VisionService.detectLabels(widget.imageBytes!);
-        labels = result;
-      } else {
-        // 📱 MOBILE → ML Kit
-        final inputImage =
-            InputImage.fromFile(widget.imageFile!);
+      final recognizedLabels = await _imageLabeler.processImage(inputImage);
 
-        final recognizedLabels =
-            await _imageLabeler.processImage(inputImage);
+      labels = recognizedLabels
+          .map((e) =>
+              "${e.label} (${(e.confidence * 100).toStringAsFixed(1)}%)")
+          .toList();
 
-        labels = recognizedLabels
-            .map((e) =>
-                "${e.label} (${(e.confidence * 100).toStringAsFixed(1)}%)")
-            .toList();
-      }
+      debugPrint("Labels detected: $labels");
     } catch (e) {
-      debugPrint("Detection Error: $e");
+      debugPrint("ML Kit Error: $e");
     }
 
     if (mounted) {
       setState(() {
-        isLoading = false;
+        isProcessing = false;
       });
     }
   }
 
   @override
   void dispose() {
-    if (!kIsWeb) {
-      _imageLabeler.close();
-    }
+    _imageLabeler.close();
     super.dispose();
   }
 
@@ -80,13 +63,10 @@ class _ImageDetectionPageState
       body: Column(
         children: [
           Expanded(
-            child: kIsWeb
-                ? Image.memory(widget.imageBytes!,
-                    fit: BoxFit.cover)
-                : Image.file(widget.imageFile!,
-                    fit: BoxFit.cover),
+            child: Image.file(widget.imageFile,
+                fit: BoxFit.cover, width: double.infinity),
           ),
-          isLoading
+          isProcessing
               ? const Padding(
                   padding: EdgeInsets.all(16),
                   child: CircularProgressIndicator(),

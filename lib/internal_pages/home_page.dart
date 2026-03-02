@@ -153,7 +153,6 @@ class _HomeTabState extends State<HomeTab> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6F0),
-
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -167,8 +166,7 @@ class _HomeTabState extends State<HomeTab> {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.notifications,
-                color: Color(0xFF1B5E20)),
+            icon: const Icon(Icons.notifications, color: Color(0xFF1B5E20)),
             onPressed: () {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text("No new notifications")),
@@ -178,14 +176,12 @@ class _HomeTabState extends State<HomeTab> {
           Stack(
             children: [
               IconButton(
-                icon: const Icon(Icons.shopping_cart,
-                    color: Color(0xFF1B5E20)),
+                icon: const Icon(Icons.shopping_cart, color: Color(0xFF1B5E20)),
                 onPressed: () async {
                   await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => const CartPage()),
                   );
-
                   setState(() {
                     cartCount = CartService().totalItems;
                   });
@@ -201,8 +197,7 @@ class _HomeTabState extends State<HomeTab> {
                       color: Colors.red,
                       shape: BoxShape.circle,
                     ),
-                    constraints:
-                        const BoxConstraints(minWidth: 18, minHeight: 18),
+                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                     child: Text(
                       '$cartCount',
                       style: const TextStyle(
@@ -218,14 +213,12 @@ class _HomeTabState extends State<HomeTab> {
           ),
         ],
       ),
-
       body: SingleChildScrollView(
         padding:
             EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-
             // SEARCH BAR
             Container(
               height: 50,
@@ -243,7 +236,6 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
             ),
-
             const SizedBox(height: 16),
 
             // BANNER BUTTONS
@@ -274,7 +266,6 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ],
             ),
-
             const SizedBox(height: 20),
 
             const Text(
@@ -285,7 +276,6 @@ class _HomeTabState extends State<HomeTab> {
                 fontSize: 18,
               ),
             ),
-
             const SizedBox(height: 12),
 
             isLoading
@@ -303,55 +293,51 @@ class _HomeTabState extends State<HomeTab> {
                     itemBuilder: (_, index) {
                       final product = products[index];
 
-return _productCard(
-  name: product['name'] ?? '',
-  price: product['price']?.toDouble() ?? 0.0,
-  imageUrl: product['image_url'] ?? '',
-  onAddToCart: () {
-    CartService().addToCart(
-      CartItem(
-        id: product['id'].toString(),
-        name: product['name'],
-        price: product['price'].toDouble(),
-        imageUrl: product['image_url'],
-      ),
-    );
-
-    setState(() {
-      cartCount = CartService().totalItems;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("${product['name']} added to cart")),
-    );
-  },
-  onFavorite: () async {
-  final item = FavoriteItem(
-    id: '',
-    productId: product['id'].toString(),
-    name: product['name'],
-    price: product['price'].toDouble(),
-    imageUrl: product['image_url'],
-  );
-
-  await FavoriteService().addToFavorite(item);
-
-  ScaffoldMessenger.of(context).showSnackBar(
-    const SnackBar(content: Text("Added to favorites")),
-  );
-},
-  onTap: () {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ProductDetailsPage(
-          productId: product['id'],
-          origin: 'home',
-        ),
-      ),
-    );
-  },
-);
+                      return _productCard(
+                        name: product['name'] ?? '',
+                        price: product['price']?.toDouble() ?? 0.0,
+                        imageUrl: product['image_url'] ?? '',
+                        onAddToCart: () {
+                          CartService().addToCart(
+                            CartItem(
+                              id: product['id'].toString(),
+                              name: product['name'],
+                              price: product['price'].toDouble(),
+                              imageUrl: product['image_url'],
+                            ),
+                          );
+                          setState(() {
+                            cartCount = CartService().totalItems;
+                          });
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("${product['name']} added to cart")),
+                          );
+                        },
+                        onFavorite: () async {
+                          final item = FavoriteItem(
+                            id: '',
+                            productId: product['id'].toString(),
+                            name: product['name'],
+                            price: product['price'].toDouble(),
+                            imageUrl: product['image_url'],
+                          );
+                          await FavoriteService().addToFavorite(item);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("Added to favorites")),
+                          );
+                        },
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ProductDetailsPage(
+                                productId: product['id'],
+                                origin: 'home',
+                              ),
+                            ),
+                          );
+                        },
+                      );
                     },
                   ),
           ],
@@ -409,8 +395,7 @@ return _productCard(
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(18)),
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
                 child: Image.network(
                   imageUrl,
                   width: double.infinity,
@@ -430,8 +415,7 @@ return _productCard(
                   Text(name,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style:
-                          const TextStyle(fontWeight: FontWeight.bold)),
+                      style: const TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(height: 6),
                   Text("\$$price",
                       style: const TextStyle(
@@ -443,13 +427,11 @@ return _productCard(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.favorite_border,
-                            color: Color(0xFF1B5E20)),
+                        icon: const Icon(Icons.favorite_border, color: Color(0xFF1B5E20)),
                         onPressed: onFavorite,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.shopping_cart,
-                            color: Color(0xFF1B5E20)),
+                        icon: const Icon(Icons.shopping_cart, color: Color(0xFF1B5E20)),
                         onPressed: onAddToCart,
                       ),
                     ],

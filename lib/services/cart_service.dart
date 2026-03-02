@@ -1,58 +1,17 @@
+import 'package:flutter/material.dart';
 import '../models/cart_item.dart';
 
 class CartService {
-  /// 🔹 Singleton Instance
   static final CartService _instance = CartService._internal();
   factory CartService() => _instance;
   CartService._internal();
 
-  /// 🔹 Private Cart List
   final List<CartItem> _items = [];
+  final ValueNotifier<int> cartCountNotifier = ValueNotifier<int>(0);
 
-  /// 🔹 Public Getter (Recommended)
-  List<CartItem> get items => _items;
-
-  /// (Optional) If you want to use cartItems name also
   List<CartItem> get cartItems => _items;
+  int get totalItems => _items.length;
 
-  /// 🛒 ADD TO CART
-  void addToCart(CartItem item) {
-    final index = _items.indexWhere((e) => e.id == item.id);
-
-    if (index != -1) {
-      _items[index].quantity++;
-    } else {
-      _items.add(item);
-    }
-  }
-
-  /// ❌ REMOVE ITEM
-  void removeFromCart(CartItem item) {
-    _items.removeWhere((e) => e.id == item.id);
-  }
-
-  /// ➕ INCREASE QUANTITY
-  void increaseQty(CartItem item) {
-    final index = _items.indexWhere((e) => e.id == item.id);
-    if (index != -1) {
-      _items[index].quantity++;
-    }
-  }
-
-  /// ➖ DECREASE QUANTITY
-  void decreaseQty(CartItem item) {
-    final index = _items.indexWhere((e) => e.id == item.id);
-
-    if (index != -1) {
-      if (_items[index].quantity > 1) {
-        _items[index].quantity--;
-      } else {
-        _items.removeAt(index);
-      }
-    }
-  }
-
-  /// 💰 TOTAL PRICE
   double get totalPrice {
     double total = 0;
     for (var item in _items) {
@@ -61,17 +20,37 @@ class CartService {
     return total;
   }
 
-  /// 🔢 TOTAL ITEM COUNT
-  int get totalItems {
-    int count = 0;
-    for (var item in _items) {
-      count += item.quantity;
+  void addToCart(CartItem item) {
+    int index = _items.indexWhere((e) => e.id == item.id);
+    if (index != -1) {
+      _items[index].quantity += 1;
+    } else {
+      _items.add(item);
     }
-    return count;
+    cartCountNotifier.value = _items.length;
   }
 
-  /// 🧹 CLEAR CART
+  void removeFromCart(CartItem item) {
+    _items.removeWhere((e) => e.id == item.id);
+    cartCountNotifier.value = _items.length;
+  }
+
+  void increaseQty(CartItem item) {
+    item.quantity += 1;
+    cartCountNotifier.value = _items.length;
+  }
+
+  void decreaseQty(CartItem item) {
+    if (item.quantity > 1) {
+      item.quantity -= 1;
+    } else {
+      removeFromCart(item);
+    }
+    cartCountNotifier.value = _items.length;
+  }
+
   void clearCart() {
     _items.clear();
+    cartCountNotifier.value = 0;
   }
 }

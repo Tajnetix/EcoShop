@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+final supabase = Supabase.instance.client;
 
 class EditProfilePage extends StatefulWidget {
-  const EditProfilePage({super.key});
+  EditProfilePage({super.key});
 
   @override
   State<EditProfilePage> createState() => _EditProfilePageState();
@@ -9,15 +12,46 @@ class EditProfilePage extends StatefulWidget {
 
 class _EditProfilePageState extends State<EditProfilePage> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
 
-  final TextEditingController _nameController =
-      TextEditingController(text: "Sarah Johnson");
+  bool isLoading = true;
 
-  final TextEditingController _emailController =
-      TextEditingController(text: "sarah.j@email.com");
+  @override
+  void initState() {
+    super.initState();
+    loadUserData();
+  }
 
-  final TextEditingController _phoneController =
-      TextEditingController();
+  Future<void> loadUserData() async {
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    final userData = await supabase.from('users').select('name,email,phone').eq('id', userId).maybeSingle();
+    if (userData != null) {
+      _nameController.text = userData['name'] ?? '';
+      _emailController.text = userData['email'] ?? '';
+      _phoneController.text = userData['phone'] ?? '';
+    }
+
+    setState(() => isLoading = false);
+  }
+
+  Future<void> saveChanges() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final userId = supabase.auth.currentUser?.id;
+    if (userId == null) return;
+
+    await supabase.from('users').update({
+      'name': _nameController.text,
+      'email': _emailController.text,
+      'phone': _phoneController.text,
+    }).eq('id', userId);
+
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Changes Saved')));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,283 +59,51 @@ class _EditProfilePageState extends State<EditProfilePage> {
       backgroundColor: const Color(0xFFDCECCB),
       appBar: AppBar(
         backgroundColor: const Color(0xFFC8DAB5),
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1B5E20)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
-          "Edit Profile",
-          style: TextStyle(
-            color: Color(0xFF1B5E20),
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        centerTitle: true,
+        title: const Text("Edit Profile", style: TextStyle(color: Color(0xFF1B5E20))),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-
-                /// MAIN WHITE CARD
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-
-                      /// Change Photo
-                      Row(
-                        children: [
-                          Stack(
-                            children: [
-                              const CircleAvatar(
-                                radius: 35,
-                                backgroundColor: Color(0xFFE5EFE0),
-                                child: Icon(Icons.person,
-                                    size: 35,
-                                    color: Color(0xFF1B5E20)),
-                              ),
-                              Positioned(
-                                bottom: 0,
-                                right: 0,
-                                child: GestureDetector(
-                                  onTap: () {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                            "Change photo clicked"),
-                                      ),
-                                    );
-                                  },
-                                  child: Container(
-                                    padding: const EdgeInsets.all(6),
-                                    decoration: const BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: Color(0xFF1B5E20),
-                                    ),
-                                    child: const Icon(
-                                      Icons.camera_alt,
-                                      size: 16,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 16),
-                          const Text(
-                            "Change Photo",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          )
-                        ],
+      body: isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    /// Avatar
+                    CircleAvatar(radius: 50, backgroundColor: Colors.white, child: Icon(Icons.person, size: 50, color: Colors.green[800])),
+                    const SizedBox(height: 20),
+                    _buildTextField(controller: _nameController, label: 'Full Name', validator: (v) => v!.isEmpty ? 'Enter name' : null),
+                    const SizedBox(height: 16),
+                    _buildTextField(controller: _emailController, label: 'Email', validator: (v) => v!.contains('@') ? null : 'Enter valid email'),
+                    const SizedBox(height: 16),
+                    _buildTextField(controller: _phoneController, label: 'Phone Number'),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: saveChanges,
+                        style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF1B5E20), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
+                        child: const Text("Save Changes", style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
                       ),
-
-                      const SizedBox(height: 30),
-
-                      /// FULL NAME
-                      const Text("Full Name"),
-                      const SizedBox(height: 8),
-                      _buildTextField(
-                        controller: _nameController,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return "Please enter your name";
-                          }
-                          return null;
-                        },
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      /// EMAIL LABEL + VERIFIED ABOVE FIELD
-                      Row(
-                        mainAxisAlignment:
-                            MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text("Email"),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 5),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFE5EFE0),
-                              borderRadius:
-                                  BorderRadius.circular(20),
-                            ),
-                            child: const Row(
-                              children: [
-                                Icon(Icons.check_circle,
-                                    size: 14,
-                                    color: Color(0xFF1B5E20)),
-                                SizedBox(width: 4),
-                                Text(
-                                  "Email Verified",
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Color(0xFF1B5E20),
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 8),
-
-                      _buildTextField(
-                        controller: _emailController,
-                        validator: (value) {
-                          if (value == null ||
-                              !value.contains("@")) {
-                            return "Enter valid email";
-                          }
-                          return null;
-                        },
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      /// PHONE NUMBER
-                      const Text("Phone Number"),
-                      const SizedBox(height: 8),
-                      _buildTextField(
-                        controller: _phoneController,
-                        hint: "Enter phone number",
-                      ),
-
-                      const SizedBox(height: 25),
-
-                      /// CHANGE PASSWORD
-                      InkWell(
-                        onTap: () {
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    "Change Password Clicked")),
-                          );
-                        },
-                        child: Row(
-                          children: const [
-                            Icon(Icons.lock,
-                                color: Color(0xFF1B5E20)),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Text("Change password"),
-                            ),
-                            Icon(Icons.chevron_right),
-                          ],
-                        ),
-                      ),
-
-                      const SizedBox(height: 30),
-
-                      /// SAVE BUTTON
-                      SizedBox(
-                        width: double.infinity,
-                        height: 50,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor:
-                                const Color(0xFF1B5E20),
-                            shape: RoundedRectangleBorder(
-                              borderRadius:
-                                  BorderRadius.circular(30),
-                            ),
-                          ),
-                          onPressed: () {
-                            if (_formKey.currentState!
-                                .validate()) {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(
-                                const SnackBar(
-                                    content:
-                                        Text("Changes Saved")),
-                              );
-                            }
-                          },
-                          child: const Text(
-                            "Save Changes",
-                            style: TextStyle(
-                                fontSize: 16,
-                                fontWeight:
-                                    FontWeight.w600),
-                          ),
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-
-                      /// DEACTIVATE ACCOUNT (ONLY ONCE)
-                      InkWell(
-                        onTap: () {
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(
-                            const SnackBar(
-                                content: Text(
-                                    "Deactivate Account Clicked")),
-                          );
-                        },
-                        child: Row(
-                          children: const [
-                            Icon(Icons.delete,
-                                color: Colors.grey),
-                            SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                "Deactivate Account",
-                                style: TextStyle(
-                                    fontWeight:
-                                        FontWeight.w500),
-                              ),
-                            ),
-                            Icon(Icons.chevron_right),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    String? hint,
-    String? Function(String?)? validator,
-  }) {
+  Widget _buildTextField({required TextEditingController controller, required String label, String? Function(String?)? validator}) {
     return TextFormField(
       controller: controller,
       validator: validator,
       decoration: InputDecoration(
-        hintText: hint,
+        labelText: label,
         filled: true,
-        fillColor: const Color(0xFFF0F0F0),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(18),
-          borderSide: BorderSide.none,
-        ),
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
       ),
     );
   }

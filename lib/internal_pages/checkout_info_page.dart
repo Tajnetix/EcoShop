@@ -1,165 +1,122 @@
 import 'package:flutter/material.dart';
 import 'payment_page.dart';
 
-class CheckoutInfoPage extends StatelessWidget {
+class CheckoutInfoPage extends StatefulWidget {
   const CheckoutInfoPage({super.key});
+
+  @override
+  State<CheckoutInfoPage> createState() => _CheckoutInfoPageState();
+}
+
+class _CheckoutInfoPageState extends State<CheckoutInfoPage> {
+  final fullNameController = TextEditingController();
+  final emailController = TextEditingController();
+  final phoneController = TextEditingController();
+  final streetController = TextEditingController();
+  final cityController = TextEditingController();
+  final stateController = TextEditingController();
+  final zipController = TextEditingController();
+  final countryController = TextEditingController();
+
+  bool get isFormValid {
+    final emailRegex =
+        RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+    final phoneRegex =
+        RegExp(r'^01[0-9]{9}$'); // Bangladesh number
+
+    return fullNameController.text.trim().length >= 3 &&
+        emailRegex.hasMatch(emailController.text.trim()) &&
+        phoneRegex.hasMatch(phoneController.text.trim()) &&
+        streetController.text.trim().isNotEmpty &&
+        cityController.text.trim().isNotEmpty &&
+        stateController.text.trim().isNotEmpty &&
+        zipController.text.trim().length >= 4 &&
+        countryController.text.trim().isNotEmpty;
+  }
+
+  Widget buildTextField(
+      String label, TextEditingController controller,
+      {TextInputType type = TextInputType.text}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 15),
+      child: TextField(
+        controller: controller,
+        keyboardType: type,
+        decoration: InputDecoration(
+          labelText: label,
+          filled: true,
+          fillColor: Colors.green.shade50,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        onChanged: (_) => setState(() {}),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFDDE8D3),
-
+      backgroundColor: Colors.green.shade50,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        title: const Text(
-          "Checkout",
-          style: TextStyle(color: Colors.black),
-        ),
-        centerTitle: true,
-        iconTheme: const IconThemeData(color: Colors.black),
+        title: const Text("Checkout Information"),
+        backgroundColor: Colors.green,
       ),
-
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           children: [
+            buildTextField("Full Name", fullNameController),
+            buildTextField("Email", emailController,
+                type: TextInputType.emailAddress),
+            buildTextField("Phone (01XXXXXXXXX)",
+                phoneController,
+                type: TextInputType.phone),
+            buildTextField("Street Address", streetController),
+            buildTextField("City", cityController),
+            buildTextField("State", stateController),
+            buildTextField("Zip Code", zipController,
+                type: TextInputType.number),
+            buildTextField("Country", countryController),
 
-            // ===== STEP INDICATOR =====
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: const [
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: Color(0xFF1B5E20),
-                  child: Text("1",
-                      style: TextStyle(color: Colors.white)),
-                ),
-                SizedBox(width: 8),
-                Text("Info"),
-                SizedBox(width: 20),
-                CircleAvatar(
-                  radius: 14,
-                  backgroundColor: Colors.grey,
-                  child: Text("2",
-                      style: TextStyle(color: Colors.white)),
-                ),
-                SizedBox(width: 8),
-                Text("Payment"),
-              ],
-            ),
+            const SizedBox(height: 25),
 
-            const SizedBox(height: 20),
-
-            // ===== PERSONAL INFO =====
-            _cardSection(
-              title: "Personal Information",
-              child: Column(
-                children: const [
-                  _InputField("Full Name"),
-                  _InputField("Email"),
-                  _InputField("Phone"),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // ===== ADDRESS =====
-            _cardSection(
-              title: "Shipping Address",
-              child: Column(
-                children: const [
-                  _InputField("Street Address"),
-                  _InputField("City"),
-                  _InputField("State"),
-                  _InputField("ZIP Code"),
-                  _InputField("Country"),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // ===== CONTINUE BUTTON =====
             SizedBox(
               width: double.infinity,
-              height: 50,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1B5E20),
+                  backgroundColor: Colors.green,
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const PaymentPage(),
-                    ),
-                  );
-                },
-
+                onPressed: isFormValid
+                    ? () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PaymentPage(
+                              buyerName:
+                                  fullNameController.text.trim(),
+                              buyerEmail:
+                                  emailController.text.trim(),
+                              buyerPhone:
+                                  phoneController.text.trim(),
+                            ),
+                          ),
+                        );
+                      }
+                    : null,
                 child: const Text(
                   "Continue to Payment",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 16),
                 ),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // ===== CARD UI =====
-  static Widget _cardSection({
-    required String title,
-    required Widget child,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16)),
-          const SizedBox(height: 12),
-          child,
-        ],
-      ),
-    );
-  }
-}
-
-// ===== INPUT FIELD =====
-class _InputField extends StatelessWidget {
-  final String hint;
-  const _InputField(this.hint);
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: TextField(
-        decoration: InputDecoration(
-          hintText: hint,
-          filled: true,
-          fillColor: const Color(0xFFF2F6F0),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(10),
-            borderSide: BorderSide.none,
-          ),
         ),
       ),
     );
