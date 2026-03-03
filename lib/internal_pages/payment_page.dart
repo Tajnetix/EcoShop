@@ -29,7 +29,6 @@ class _PaymentPageState extends State<PaymentPage> {
   Future<void> processPayment() async {
     final user = supabase.auth.currentUser;
 
-    // 🔐 EXTRA SAFETY (Checkout already redirects guest)
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text("Please sign up to complete purchase")),
@@ -55,11 +54,12 @@ class _PaymentPageState extends State<PaymentPage> {
       for (var item in cartItems) {
         await supabase.from('orders').insert({
           'user_id': user.id,
-          'product_id': item.id, // if available in your model
+          'product_id': item.id,
           'product_name': item.name,
           'quantity': item.quantity,
-          'eco_points': item.ecoPoints,   // ✅ your existing eco logic
-          'co2_saved': item.co2Saved,     // ✅ your existing eco logic
+          'eco_points': item.ecoPoints * item.quantity,
+          'co2_saved': item.co2Saved * item.quantity,
+          'created_at': DateTime.now().toIso8601String(),
         });
       }
 
@@ -69,9 +69,7 @@ class _PaymentPageState extends State<PaymentPage> {
 
       Navigator.pushAndRemoveUntil(
         context,
-        MaterialPageRoute(
-          builder: (_) => const DashboardPage(),
-        ),
+        MaterialPageRoute(builder: (_) => const DashboardPage()),
         (route) => false,
       );
     } catch (e) {

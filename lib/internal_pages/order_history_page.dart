@@ -3,8 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'dashboard_page.dart'; // For Purchase model
 
 class OrderHistoryPage extends StatelessWidget {
-  final List<Purchase>? guestOrders; // optional for guest
-  const OrderHistoryPage({super.key, this.guestOrders});
+  const OrderHistoryPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -63,10 +62,6 @@ class OrderHistoryPage extends StatelessWidget {
   }
 
   Future<List<Purchase>> fetchOrders(SupabaseClient supabase) async {
-    // Guest orders available
-    if (guestOrders != null) return guestOrders!;
-
-    // Logged-in user fetch
     final user = supabase.auth.currentUser;
     if (user == null) return [];
 
