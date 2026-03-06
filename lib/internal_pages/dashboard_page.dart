@@ -109,8 +109,7 @@ class _DashboardPageState extends State<DashboardPage> {
     }
 
     double goal = 5.0;
-    double percent =
-        goal == 0 ? 0 : (monthlyCO2 / goal).clamp(0.0, 1.0);
+    double percent = goal == 0 ? 0 : (monthlyCO2 / goal).clamp(0.0, 1.0);
 
     return Scaffold(
       backgroundColor: const Color(0xFFE8F3E5),
@@ -126,46 +125,302 @@ class _DashboardPageState extends State<DashboardPage> {
             );
           },
         ),
-        title: const Text("Eco Dashboard",
-            style: TextStyle(color: Colors.black)),
+        title: const Text(
+          "Eco Dashboard",
+          style: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold),
+        ),
         centerTitle: true,
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // === KEEP YOUR ORIGINAL STAT CARDS UI HERE ===
-              // Example for total points
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Text("Total Points: $totalPoints"),
-                      Text("Total CO2 Saved: ${totalCO2.toStringAsFixed(2)} kg"),
-                      Text("Monthly CO2: ${monthlyCO2.toStringAsFixed(2)} kg"),
-                      LinearProgressIndicator(value: percent),
-                    ],
-                  ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+
+            /// ================= HEADER =================
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(20),
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF8BC34A), Color(0xFF66BB6A)],
                 ),
               ),
-              const SizedBox(height: 20),
-              // === Purchases List ===
-              const Text(
-                "Recent Purchases",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              child: Row(
+                children: const [
+                  CircleAvatar(
+                    radius: 26,
+                    backgroundColor: Colors.white24,
+                    child: Icon(Icons.eco,
+                        color: Colors.white, size: 28),
+                  ),
+                  SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "Your Impact",
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        "Track your eco-friendly journey",
+                        style: TextStyle(
+                            color: Colors.white70),
+                      ),
+                    ],
+                  )
+                ],
               ),
-              const SizedBox(height: 10),
-              ...purchases.map((p) => ListTile(
-                    title: Text(p.name),
-                    subtitle:
-                        Text("${p.points} points • ${p.co2} kg CO2 saved"),
-                  )),
-            ],
+            ),
+
+            const SizedBox(height: 20),
+
+            /// ================= POINTS & CO2 =================
+            Row(
+              children: [
+                Expanded(
+                  child: _statCard(
+                      "Eco Points",
+                      totalPoints.toString()),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: _statCard(
+                      "Total CO₂",
+                      "${totalCO2.toStringAsFixed(2)} kg"),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            /// ================= CARBON IMPACT (BIG CLEAN VERSION) =================
+Card(
+  elevation: 0,
+  shape: RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(22),
+  ),
+  child: Padding(
+    padding: const EdgeInsets.symmetric(vertical: 28),
+    child: Column(
+      children: [
+        const Align(
+          alignment: Alignment.centerLeft,
+          child: Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20),
+            child: Text(
+              "Carbon Impact",
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 16,
+              ),
+            ),
           ),
         ),
+        const SizedBox(height: 30),
+
+        /// BIG Smooth Circle
+        TweenAnimationBuilder<double>(
+          tween: Tween(begin: 0, end: percent),
+          duration: const Duration(milliseconds: 1000),
+          curve: Curves.easeOutCubic,
+          builder: (context, value, _) {
+            return SizedBox(
+              height: 190,
+              width: 190,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  // Soft background circle
+                  Container(
+                    height: 190,
+                    width: 190,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.green.shade50,
+                    ),
+                  ),
+
+                  // Progress ring
+                  SizedBox(
+                    height: 170,
+                    width: 170,
+                    child: CircularProgressIndicator(
+                      value: value,
+                      strokeWidth: 12,
+                      backgroundColor: Colors.green.shade100,
+                      valueColor: const AlwaysStoppedAnimation(
+                        Color(0xFF66BB6A),
+                      ),
+                    ),
+                  ),
+
+                  // Center Text
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        "${(value * 100).toStringAsFixed(0)}%",
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text(
+                        "CO₂ Reduction",
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+
+        const SizedBox(height: 22),
+
+        Text(
+          "Total Carbon Saved",
+          style: TextStyle(
+            color: Colors.grey[600],
+            fontSize: 14,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "${totalCO2.toStringAsFixed(2)} kg",
+          style: const TextStyle(
+            fontWeight: FontWeight.w600,
+            fontSize: 16,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          "Equivalent to ${(totalCO2 * 4).toStringAsFixed(0)} km not driven",
+          style: TextStyle(
+            fontSize: 13,
+            color: Colors.grey[600],
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ],
+    ),
+  ),
+),
+
+            /// ================= RECENT PURCHASES =================
+            const Text(
+              "Recent Sustainable Purchases",
+              style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+
+            ...purchases.map((p) => Container(
+                  margin:
+                      const EdgeInsets.symmetric(vertical: 6),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius:
+                        BorderRadius.circular(14),
+                  ),
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(p.name,
+                          style: const TextStyle(
+                              fontWeight:
+                                  FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text(
+                        "+${p.points} points    ${p.co2.toStringAsFixed(2)} kg CO₂",
+                        style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13),
+                      )
+                    ],
+                  ),
+                )),
+
+            const SizedBox(height: 20),
+
+            /// ================= MONTHLY GOAL =================
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.green.shade100,
+                borderRadius:
+                    BorderRadius.circular(18),
+              ),
+              child: Column(
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
+                children: [
+                  const Text("Monthly Goal",
+                      style: TextStyle(
+                          fontWeight:
+                              FontWeight.bold)),
+                  const SizedBox(height: 4),
+                  const Text("Save 5kg of CO₂ this month"),
+                  const SizedBox(height: 10),
+                  LinearProgressIndicator(
+                    value: percent,
+                    minHeight: 8,
+                    backgroundColor:
+                        Colors.green.shade200,
+                    color: Colors.green,
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    "${monthlyCO2.toStringAsFixed(2)} / 5 kg",
+                    style: TextStyle(
+                        color: Colors.grey[700]),
+                  )
+                ],
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statCard(String title, String value) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment:
+            CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: TextStyle(
+                  color: Colors.grey[700])),
+          const SizedBox(height: 6),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold)),
+        ],
       ),
     );
   }

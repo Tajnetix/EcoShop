@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart'; // for kIsWeb
 import 'package:flutter/material.dart';
 import 'package:dotted_border/dotted_border.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:image_picker/image_picker.dart';
 import 'image_detection_page.dart';
 import 'image_detection_page_web.dart';

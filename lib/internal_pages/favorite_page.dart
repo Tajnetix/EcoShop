@@ -167,7 +167,7 @@ class _FavoritePageState extends State<FavoritePage> {
                                     ),
                                     const SizedBox(height: 6),
                                     Text(
-                                      "\$${product.price}",
+                                      "৳${product.price}", // <-- Fixed currency symbol
                                       style: const TextStyle(
                                         color: Colors.green,
                                         fontWeight: FontWeight.bold,

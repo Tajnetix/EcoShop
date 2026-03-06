@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
-import 'edit_profile_page.dart';
 import 'order_history_page.dart';
 import 'settings_page.dart';
+import 'home_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -70,9 +69,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (!isLoggedIn) {
@@ -92,9 +89,14 @@ class _ProfilePageState extends State<ProfilePage> {
         backgroundColor: const Color(0xFFC8DAB5),
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF1B5E20)),
-          onPressed: () => Navigator.pop(context),
-        ),
+  icon: const Icon(Icons.arrow_back, color: Color(0xFF1B5E20)),
+  onPressed: () {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomePage()),
+    );
+  },
+),
         title: const Text(
           "Profile",
           style: TextStyle(
@@ -120,20 +122,27 @@ class _ProfilePageState extends State<ProfilePage> {
                   const CircleAvatar(
                     radius: 35,
                     backgroundColor: Color(0xFFE5EFE0),
-                    child: Icon(Icons.person,
-                        size: 35, color: Color(0xFF1B5E20)),
+                    child: Icon(
+                      Icons.person,
+                      size: 35,
+                      color: Color(0xFF1B5E20),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(name,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 18)),
+                      Text(
+                        name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       Text(email.isEmpty ? "Guest User" : email),
                     ],
-                  )
+                  ),
                 ],
               ),
             ),
@@ -146,23 +155,14 @@ class _ProfilePageState extends State<ProfilePage> {
                 _StatCard(title: 'Orders', value: totalOrders.toString()),
                 _StatCard(title: 'Eco Points', value: ecoPoints.toString()),
                 _StatCard(
-                    title: 'CO₂ Saved', value: "${co2Saved.toStringAsFixed(2)} kg"),
+                  title: 'CO₂ Saved',
+                  value: "${co2Saved.toStringAsFixed(2)} kg",
+                ),
               ],
             ),
             const SizedBox(height: 30),
 
             // Menu Items
-            _menuItem(
-              icon: Icons.edit,
-              title: "Edit Profile",
-              subtitle: "Change your info",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => EditProfilePage()),
-                );
-              },
-            ),
             _menuItem(
               icon: Icons.history,
               title: "Order History",
@@ -204,11 +204,14 @@ class _ProfilePageState extends State<ProfilePage> {
           children: [
             Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
             const SizedBox(height: 6),
-            Text(value,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                    color: Colors.green)),
+            Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 18,
+                color: Colors.green,
+              ),
+            ),
           ],
         ),
       ),

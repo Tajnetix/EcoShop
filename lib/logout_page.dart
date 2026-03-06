@@ -12,7 +12,6 @@ class _LogoutPageState extends State<LogoutPage> {
   void initState() {
     super.initState();
 
-    // Auto redirect after 2 seconds
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         Navigator.pushNamedAndRemoveUntil(
@@ -35,30 +34,15 @@ class _LogoutPageState extends State<LogoutPage> {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(20),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 10,
-                offset: Offset(0, 4),
-              ),
-            ],
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(18),
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Color(0xFFE8F5E9),
-                ),
-                child: const Icon(
-                  Icons.check_circle,
-                  size: 48,
-                  color: Color(0xFF1B5E20),
-                ),
-              ),
+              const Icon(Icons.check_circle,
+                  size: 60, color: Color(0xFF1B5E20)),
+
               const SizedBox(height: 16),
+
               const Text(
                 'Logout Successful',
                 style: TextStyle(
@@ -67,26 +51,21 @@ class _LogoutPageState extends State<LogoutPage> {
                   color: Color(0xFF1B5E20),
                 ),
               ),
+
               const SizedBox(height: 8),
+
               const Text(
-                'You have been safely logged out.\nRedirecting to login...',
+                'Redirecting to login...',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.black54,
-                ),
               ),
+
               const SizedBox(height: 20),
+
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1B5E20),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 32,
-                    vertical: 12,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                 ),
                 onPressed: () {
                   Navigator.pushNamedAndRemoveUntil(
@@ -99,6 +78,7 @@ class _LogoutPageState extends State<LogoutPage> {
                   'Go to Login',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
+                    color: Colors.white, // ✅ visibility fixed
                   ),
                 ),
               ),

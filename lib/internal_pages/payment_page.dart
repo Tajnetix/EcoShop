@@ -46,13 +46,12 @@ class _PaymentPageState extends State<PaymentPage> {
 
     setState(() => isProcessing = true);
 
-    await Future.delayed(const Duration(seconds: 2));
-
     final cartItems = CartService().cartItems;
 
     try {
-      for (var item in cartItems) {
-        await supabase.from('orders').insert({
+      /// Insert all orders at once
+      await supabase.from('orders').insert(
+        cartItems.map((item) => {
           'user_id': user.id,
           'product_id': item.id,
           'product_name': item.name,
@@ -60,13 +59,14 @@ class _PaymentPageState extends State<PaymentPage> {
           'eco_points': item.ecoPoints * item.quantity,
           'co2_saved': item.co2Saved * item.quantity,
           'created_at': DateTime.now().toIso8601String(),
-        });
-      }
+        }).toList(),
+      );
 
       CartService().clearCart();
 
       if (!mounted) return;
 
+      /// Go to Dashboard after payment
       Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const DashboardPage()),
@@ -96,18 +96,14 @@ class _PaymentPageState extends State<PaymentPage> {
             TextField(
               controller: numberController,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "bKash Number",
-              ),
+              decoration: const InputDecoration(labelText: "bKash Number"),
             ),
             const SizedBox(height: 15),
             TextField(
               controller: pinController,
               obscureText: true,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: "PIN",
-              ),
+              decoration: const InputDecoration(labelText: "PIN"),
             ),
             const SizedBox(height: 30),
             isProcessing
@@ -115,8 +111,8 @@ class _PaymentPageState extends State<PaymentPage> {
                 : ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.green,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 40, vertical: 15),
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
                     ),
                     onPressed: processPayment,
                     child: const Text("Confirm Payment"),

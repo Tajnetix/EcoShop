@@ -5,15 +5,15 @@ import 'dashboard_page.dart';
 import 'category_page.dart';
 import 'favorite_page.dart';
 import 'profile_page.dart';
-import 'message_page.dart';
-import '../all_categories_pages/product_details_page.dart';
 import 'image_search_page.dart';
+import 'cart_page.dart';
+import 'feedback_page.dart';
 
 import '../services/cart_service.dart';
-import '../models/cart_item.dart';
 import '../services/favorite_service.dart';
+import '../models/cart_item.dart';
 import '../models/favorite_model.dart';
-import 'cart_page.dart';
+import '../all_categories_pages/product_details_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -44,8 +44,14 @@ class _HomePageState extends State<HomePage> {
         type: BottomNavigationBarType.fixed,
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.grid_view), label: 'Categories'),
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'Favorites'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.grid_view),
+            label: 'Categories',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite),
+            label: 'Favorites',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
@@ -71,7 +77,6 @@ class _HomeTabState extends State<HomeTab> {
 
   final TextEditingController _searchController = TextEditingController();
 
-  // Local favorite tracking
   Set<String> favoriteIds = {};
 
   @override
@@ -79,31 +84,25 @@ class _HomeTabState extends State<HomeTab> {
     super.initState();
     fetchRandomProducts();
     cartCount = CartService().totalItems;
-    loadFavorites(); // load favorites from FavoriteService
+    loadFavorites();
   }
 
   Future<void> loadFavorites() async {
-    try {
-      final favs = await FavoriteService().getFavorites();
-      setState(() {
-        favoriteIds = favs.map((e) => e.productId).toSet();
-      });
-    } catch (e) {
-      debugPrint("Error loading favorites: $e");
-    }
+    final favs = await FavoriteService().getFavorites();
+    setState(() {
+      favoriteIds = favs.map((e) => e.productId).toSet();
+    });
   }
 
   Future<void> fetchRandomProducts() async {
-    try {
-      final data = await supabase.from('products').select().limit(50);
-      data.shuffle();
-      setState(() {
-        products = List<Map<String, dynamic>>.from(data.take(10));
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
-    }
+    final data = await supabase.from('products').select().limit(50);
+
+    data.shuffle();
+
+    setState(() {
+      products = List<Map<String, dynamic>>.from(data.take(10));
+      isLoading = false;
+    });
   }
 
   Future<void> searchProducts(String query) async {
@@ -114,21 +113,18 @@ class _HomeTabState extends State<HomeTab> {
 
     setState(() => isLoading = true);
 
-    try {
-      final data = await supabase
-          .from('products')
-          .select()
-          .ilike('name', '%$query%');
+    final data = await supabase
+        .from('products')
+        .select()
+        .ilike('name', '%$query%');
 
-      setState(() {
-        products = List<Map<String, dynamic>>.from(data);
-        isLoading = false;
-      });
-    } catch (e) {
-      setState(() => isLoading = false);
-    }
+    setState(() {
+      products = List<Map<String, dynamic>>.from(data);
+      isLoading = false;
+    });
   }
 
+  /// PAGE NAVIGATION
   void _openPage(String title) {
     if (title == "Image Search") {
       Navigator.push(
@@ -146,18 +142,13 @@ class _HomeTabState extends State<HomeTab> {
       return;
     }
 
-    if (title == "Chat") {
+    if (title == "Feedback") {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const MessagePage()),
+        MaterialPageRoute(builder: (_) => const FeedbackPage()),
       );
       return;
     }
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => PlaceholderPage(title: title)),
-    );
   }
 
   @override
@@ -167,6 +158,7 @@ class _HomeTabState extends State<HomeTab> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF2F6F0),
+
       appBar: AppBar(
         backgroundColor: Colors.white,
         elevation: 0,
@@ -178,6 +170,7 @@ class _HomeTabState extends State<HomeTab> {
             fontWeight: FontWeight.bold,
           ),
         ),
+
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications, color: Color(0xFF1B5E20)),
@@ -187,6 +180,7 @@ class _HomeTabState extends State<HomeTab> {
               );
             },
           ),
+
           Stack(
             children: [
               IconButton(
@@ -196,11 +190,13 @@ class _HomeTabState extends State<HomeTab> {
                     context,
                     MaterialPageRoute(builder: (_) => const CartPage()),
                   );
+
                   setState(() {
                     cartCount = CartService().totalItems;
                   });
                 },
               ),
+
               if (cartCount > 0)
                 Positioned(
                   right: 6,
@@ -211,15 +207,9 @@ class _HomeTabState extends State<HomeTab> {
                       color: Colors.red,
                       shape: BoxShape.circle,
                     ),
-                    constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
                     child: Text(
                       '$cartCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ),
                 ),
@@ -227,17 +217,22 @@ class _HomeTabState extends State<HomeTab> {
           ),
         ],
       ),
+
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.04, vertical: 16),
+        padding: EdgeInsets.symmetric(
+          horizontal: screenWidth * 0.04,
+          vertical: 16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // SEARCH BAR
+            /// SEARCH BAR
             Container(
               height: 50,
               decoration: BoxDecoration(
                 color: const Color(0xFFE3EFE4),
-                borderRadius: BorderRadius.circular(30),
+                borderRadius: BorderRadius.circular(15),
+                border: Border.all(color: const Color(0xFF1B5E20)),
               ),
               child: TextField(
                 controller: _searchController,
@@ -249,9 +244,10 @@ class _HomeTabState extends State<HomeTab> {
                 ),
               ),
             ),
+
             const SizedBox(height: 16),
 
-            // BANNER BUTTONS
+            /// BANNER BUTTONS
             Row(
               children: [
                 Expanded(
@@ -261,7 +257,9 @@ class _HomeTabState extends State<HomeTab> {
                     onTap: () => _openPage("Image Search"),
                   ),
                 ),
+
                 const SizedBox(width: 10),
+
                 Expanded(
                   child: _bannerBtn(
                     icon: Icons.dashboard,
@@ -269,16 +267,19 @@ class _HomeTabState extends State<HomeTab> {
                     onTap: () => _openPage("Dashboard"),
                   ),
                 ),
+
                 const SizedBox(width: 10),
+
                 Expanded(
                   child: _bannerBtn(
                     icon: Icons.chat,
-                    text: "Chat",
-                    onTap: () => _openPage("Chat"),
+                    text: "Feedback",
+                    onTap: () => _openPage("Feedback"),
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 20),
 
             const Text(
@@ -289,6 +290,7 @@ class _HomeTabState extends State<HomeTab> {
                 fontSize: 18,
               ),
             ),
+
             const SizedBox(height: 12),
 
             isLoading
@@ -312,6 +314,28 @@ class _HomeTabState extends State<HomeTab> {
                         name: product['name'] ?? '',
                         price: product['price']?.toDouble() ?? 0.0,
                         imageUrl: product['image_url'] ?? '',
+                        isFavorite: isFav,
+
+                        onFavorite: () async {
+                          if (isFav) {
+                            favoriteIds.remove(pid);
+                            await FavoriteService().removeFromFavorite(pid);
+                          } else {
+                            favoriteIds.add(pid);
+                            await FavoriteService().addToFavorite(
+                              FavoriteItem(
+                                id: '',
+                                productId: pid,
+                                name: product['name'],
+                                price: product['price'].toDouble(),
+                                imageUrl: product['image_url'],
+                              ),
+                            );
+                          }
+
+                          setState(() {});
+                        },
+
                         onAddToCart: () {
                           CartService().addToCart(
                             CartItem(
@@ -319,26 +343,20 @@ class _HomeTabState extends State<HomeTab> {
                               name: product['name'],
                               price: product['price'].toDouble(),
                               imageUrl: product['image_url'],
+                              ecoPoints:
+                                  (product['eco_points'] as num?)?.toInt() ?? 0,
+                              co2Saved:
+                                  (product['co2_saved_per_unit'] as num?)
+                                      ?.toDouble() ??
+                                  0.0,
                             ),
                           );
-                          setState(() => cartCount = CartService().totalItems);
+
+                          setState(() {
+                            cartCount = CartService().totalItems;
+                          });
                         },
-                        onFavorite: () async {
-                          if (isFav) {
-                            favoriteIds.remove(pid);
-                            await FavoriteService().removeFromFavorite(pid);
-                          } else {
-                            favoriteIds.add(pid);
-                            await FavoriteService().addToFavorite(FavoriteItem(
-                              id: '',
-                              productId: pid,
-                              name: product['name'],
-                              price: product['price'].toDouble(),
-                              imageUrl: product['image_url'],
-                            ));
-                          }
-                          setState(() {}); // refresh UI
-                        },
+
                         onTap: () {
                           Navigator.push(
                             context,
@@ -350,7 +368,6 @@ class _HomeTabState extends State<HomeTab> {
                             ),
                           );
                         },
-                        isFavorite: isFav,
                       );
                     },
                   ),
@@ -368,17 +385,23 @@ class _HomeTabState extends State<HomeTab> {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(14),
+
       child: Container(
         height: 90,
+
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: const Color(0xFF1B5E20)),
         ),
+
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(icon, color: const Color(0xFF1B5E20)),
+
             const SizedBox(height: 6),
+
             Text(text, style: const TextStyle(fontSize: 12)),
           ],
         ),
@@ -390,66 +413,91 @@ class _HomeTabState extends State<HomeTab> {
     required String name,
     required double price,
     required String imageUrl,
-    required VoidCallback onAddToCart,
-    required VoidCallback onFavorite,
-    required VoidCallback onTap,
     required bool isFavorite,
+    required VoidCallback onFavorite,
+    required VoidCallback onAddToCart,
+    required VoidCallback onTap,
   }) {
     return GestureDetector(
       onTap: onTap,
+
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFF1B5E20)),
           boxShadow: const [
-            BoxShadow(color: Colors.black12, blurRadius: 6, offset: Offset(0, 3))
+            BoxShadow(
+              color: Colors.black12,
+              blurRadius: 6,
+              offset: Offset(0, 3),
+            ),
           ],
         ),
+
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
+
           children: [
             Expanded(
               child: ClipRRect(
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(18),
+                ),
+
                 child: Image.network(
                   imageUrl,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image, size: 50),
-                  ),
                 ),
               ),
             ),
+
             Padding(
               padding: const EdgeInsets.all(12),
+
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+
                 children: [
-                  Text(name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+
                   const SizedBox(height: 6),
-                  Text("\$$price",
-                      style: const TextStyle(
-                        color: Color(0xFF1B5E20),
-                        fontWeight: FontWeight.bold,
-                      )),
+
+                  Text(
+                    "৳$price",
+                    style: const TextStyle(
+                      color: Color(0xFF1B5E20),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+
                   const SizedBox(height: 8),
+
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+
                     children: [
                       IconButton(
                         icon: Icon(
                           isFavorite ? Icons.favorite : Icons.favorite_border,
-                          color: isFavorite ? Colors.green : const Color(0xFF1B5E20),
+                          color: isFavorite
+                              ? Colors.green
+                              : const Color(0xFF1B5E20),
                         ),
                         onPressed: onFavorite,
                       ),
+
                       IconButton(
-                        icon: const Icon(Icons.shopping_cart, color: Color(0xFF1B5E20)),
+                        icon: const Icon(
+                          Icons.shopping_cart,
+                          color: Color(0xFF1B5E20),
+                        ),
                         onPressed: onAddToCart,
                       ),
                     ],
@@ -459,21 +507,6 @@ class _HomeTabState extends State<HomeTab> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class PlaceholderPage extends StatelessWidget {
-  final String title;
-  const PlaceholderPage({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(title)),
-      body: Center(
-        child: Text('$title Page', style: const TextStyle(fontSize: 22)),
       ),
     );
   }

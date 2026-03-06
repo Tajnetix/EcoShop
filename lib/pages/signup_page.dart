@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../supabase_client.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -9,6 +10,11 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   bool hidePassword = true;
+  bool _loading = false;
+
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -33,11 +39,7 @@ class _SignupPageState extends State<SignupPage> {
             const CircleAvatar(
               radius: 35,
               backgroundColor: Color(0xFFC8E6C9),
-              child: Icon(
-                Icons.person_add,
-                size: 36,
-                color: Color(0xFF1B5E20),
-              ),
+              child: Icon(Icons.person_add, size: 36, color: Color(0xFF1B5E20)),
             ),
 
             const SizedBox(height: 12),
@@ -55,15 +57,13 @@ class _SignupPageState extends State<SignupPage> {
 
             const Text(
               'Create Your Account',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
 
             const SizedBox(height: 30),
 
             _buildField(
+              controller: _nameController,
               hint: 'Name',
               icon: Icons.person_outline,
               obscure: false,
@@ -72,6 +72,7 @@ class _SignupPageState extends State<SignupPage> {
             const SizedBox(height: 16),
 
             _buildField(
+              controller: _emailController,
               hint: 'Email (example@gmail.com)',
               icon: Icons.email_outlined,
               obscure: false,
@@ -80,6 +81,7 @@ class _SignupPageState extends State<SignupPage> {
             const SizedBox(height: 16),
 
             _buildField(
+              controller: _passwordController,
               hint: 'Password',
               icon: Icons.lock_outline,
               obscure: hidePassword,
@@ -110,18 +112,17 @@ class _SignupPageState extends State<SignupPage> {
                     borderRadius: BorderRadius.circular(25),
                   ),
                 ),
-                onPressed: () {
-                      Navigator.pushNamed(context, '/pin');
-                    },
-
-                child: const Text(
-                  'Sign Up',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    letterSpacing: 1,
-                  ),
-                ),
+                onPressed: _loading ? null : _signUp,
+                child: _loading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Sign Up',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white,
+                          letterSpacing: 1,
+                        ),
+                      ),
               ),
             ),
 
@@ -140,23 +141,6 @@ class _SignupPageState extends State<SignupPage> {
               ),
             ),
 
-            const SizedBox(height: 20),
-
-            const Text(
-              'or continue with',
-              style: TextStyle(color: Colors.grey),
-            ),
-
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(child: _socialButton('Google', Icons.g_mobiledata)),
-                const SizedBox(width: 12),
-                Expanded(child: _socialButton('Apple', Icons.apple)),
-              ],
-            ),
-
             const SizedBox(height: 30),
           ],
         ),
@@ -164,13 +148,65 @@ class _SignupPageState extends State<SignupPage> {
     );
   }
 
+  // ================= AUTH LOGIC =================
+
+  Future<void> _signUp() async {
+    final name = _nameController.text.trim();
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (name.isEmpty || email.isEmpty || password.isEmpty) {
+      _showError('All fields are required');
+      return;
+    }
+
+    setState(() => _loading = true);
+
+    try {
+      final res = await supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: {'name': name},
+      );
+
+      if (res.user == null) {
+        _showError('Signup failed');
+      } else {
+        final userId = res.user!.id;
+
+        // IMPORTANT: create profile row
+        await supabase.from('profiles').upsert({'id': userId, 'email': email});
+
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(
+            context,
+            '/login',
+            arguments: {'mode': 'signup', 'userId': userId},
+          );
+        }
+      }
+    } catch (e) {
+      _showError(e.toString());
+    } finally {
+      setState(() => _loading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  // ================= UI HELPERS =================
+
   Widget _buildField({
+    required TextEditingController controller,
     required String hint,
     required IconData icon,
     required bool obscure,
     Widget? suffix,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscure,
       keyboardType: hint.contains('Email')
           ? TextInputType.emailAddress
@@ -185,24 +221,6 @@ class _SignupPageState extends State<SignupPage> {
           borderRadius: BorderRadius.circular(25),
           borderSide: BorderSide.none,
         ),
-      ),
-    );
-  }
-
-  Widget _socialButton(String text, IconData icon) {
-    return Container(
-      height: 45,
-      decoration: BoxDecoration(
-        color: const Color(0xFFDCECCB),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: const Color(0xFF1B5E20)),
-          const SizedBox(width: 8),
-          Text(text),
-        ],
       ),
     );
   }

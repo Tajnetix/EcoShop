@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'pages/first_page.dart';
 import 'pages/signup_page.dart';
-import 'pages/pin_page.dart';
 import 'pages/login_page.dart';
 import 'internal_pages/home_page.dart';
 import 'internal_pages/category_page.dart';
@@ -42,7 +41,6 @@ class EcoShopApp extends StatelessWidget {
       routes: {
         '/': (context) => const FirstPage(),
         '/signup': (context) => const SignupPage(),
-        '/pin': (context) => const PinPage(),
         '/reset-password': (_) => const ResetPasswordPage(),
         '/login': (context) => const LoginPage(),
         '/home': (context) => const HomePage(),

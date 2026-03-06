@@ -197,7 +197,7 @@ class _ProductCategoryPageState extends State<ProductCategoryPage> {
                                   ),
                                   const SizedBox(height: 6),
                                   Text(
-                                    "\$$price",
+                                    "৳$price",
                                     style: const TextStyle(
                                       color: Color(0xFF1B5E20),
                                       fontWeight: FontWeight.bold,

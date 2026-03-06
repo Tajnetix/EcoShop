@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../supabase_client.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -8,8 +9,11 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  bool rememberMe = false;
   bool hidePassword = true;
+  bool loading = false;
+
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
 
   @override
   Widget build(BuildContext context) {
@@ -19,15 +23,12 @@ class _LoginPageState extends State<LoginPage> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Color(0xFF1B5E20)),
-          onPressed: () {
-            Navigator.pop(context);
-          },
+          onPressed: () => Navigator.pop(context),
         ),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             const SizedBox(height: 20),
 
@@ -56,15 +57,13 @@ class _LoginPageState extends State<LoginPage> {
 
             const Text(
               'Login to Your Account',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey,
-              ),
+              style: TextStyle(fontSize: 14, color: Colors.grey),
             ),
 
             const SizedBox(height: 30),
 
             _buildField(
+              controller: _emailController,
               hint: 'Email',
               icon: Icons.email_outlined,
               obscure: false,
@@ -73,6 +72,7 @@ class _LoginPageState extends State<LoginPage> {
             const SizedBox(height: 16),
 
             _buildField(
+              controller: _passwordController,
               hint: 'Password',
               icon: Icons.lock_outline,
               obscure: hidePassword,
@@ -83,32 +83,11 @@ class _LoginPageState extends State<LoginPage> {
                       : Icons.visibility_outlined,
                   color: const Color(0xFF1B5E20),
                 ),
-                onPressed: () {
-                  setState(() {
-                    hidePassword = !hidePassword;
-                  });
-                },
+                onPressed: () => setState(() => hidePassword = !hidePassword),
               ),
             ),
 
-            const SizedBox(height: 10),
-
-            Row(
-              children: [
-                Checkbox(
-                  value: rememberMe,
-                  activeColor: const Color(0xFF1B5E20),
-                  onChanged: (value) {
-                    setState(() {
-                      rememberMe = value ?? false;
-                    });
-                  },
-                ),
-                const Text('Remember me'),
-              ],
-            ),
-
-            const SizedBox(height: 10),
+            const SizedBox(height: 20),
 
             SizedBox(
               width: double.infinity,
@@ -120,30 +99,22 @@ class _LoginPageState extends State<LoginPage> {
                     borderRadius: BorderRadius.circular(25),
                   ),
                 ),
-                onPressed: () {
-                  // Demo login success → Go to Home
-                  Navigator.pushReplacementNamed(context, '/home');
-                },
-                child: const Text(
-                  'Sign In',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white,
-                    letterSpacing: 1,
-                  ),
-                ),
+                onPressed: loading ? null : _login,
+                child: loading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text(
+                        'Sign In',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 15),
 
+            /// ✅ Forgot password (only once)
             GestureDetector(
               onTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Password reset link sent to your email'),
-                  ),
-                );
+                Navigator.pushNamed(context, '/reset-password');
               },
               child: const Text(
                 'Forgot your password?',
@@ -154,25 +125,11 @@ class _LoginPageState extends State<LoginPage> {
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 25),
 
-            const Text(
-              'or continue with',
-              style: TextStyle(color: Colors.grey),
-            ),
+            const SizedBox(height: 25),
 
-            const SizedBox(height: 16),
-
-            Row(
-              children: [
-                Expanded(child: _socialButton('Google', Icons.g_mobiledata)),
-                const SizedBox(width: 12),
-                Expanded(child: _socialButton('Apple', Icons.apple)),
-              ],
-            ),
-
-            const SizedBox(height: 30),
-
+            /// ✅ Signup option restored
             GestureDetector(
               onTap: () {
                 Navigator.pushReplacementNamed(context, '/signup');
@@ -193,15 +150,45 @@ class _LoginPageState extends State<LoginPage> {
     );
   }
 
+  // ================= EMAIL LOGIN =================
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showError("Email & password required");
+      return;
+    }
+
+    setState(() => loading = true);
+
+    try {
+      await supabase.auth.signInWithPassword(email: email, password: password);
+
+      Navigator.pushReplacementNamed(context, '/home');
+    } catch (e) {
+      _showError("Invalid credentials");
+    } finally {
+      setState(() => loading = false);
+    }
+  }
+
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   Widget _buildField({
+    required TextEditingController controller,
     required String hint,
     required IconData icon,
     required bool obscure,
     Widget? suffix,
   }) {
     return TextField(
+      controller: controller,
       obscureText: obscure,
-      keyboardType: hint.contains('Email')
+      keyboardType: hint == 'Email'
           ? TextInputType.emailAddress
           : TextInputType.text,
       decoration: InputDecoration(
@@ -214,24 +201,6 @@ class _LoginPageState extends State<LoginPage> {
           borderRadius: BorderRadius.circular(25),
           borderSide: BorderSide.none,
         ),
-      ),
-    );
-  }
-
-  Widget _socialButton(String text, IconData icon) {
-    return Container(
-      height: 45,
-      decoration: BoxDecoration(
-        color: const Color(0xFFDCECCB),
-        borderRadius: BorderRadius.circular(25),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: const Color(0xFF1B5E20)),
-          const SizedBox(width: 8),
-          Text(text),
-        ],
       ),
     );
   }
